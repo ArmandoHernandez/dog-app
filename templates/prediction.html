@@ -1,0 +1,29 @@
+$def with(form, src)
+
+<!DOCTYPE html PUBLIC "-html>
+<head>
+    <title>DogApp</title>
+    <br/><center>
+    <h1 style=font-size:75px;color:black> Dog App!</h1>
+    </center>
+</head><body>
+<center>
+<br/><br/><br/><br/>
+<h2>Prediction</h2>
+<br/>
+<h4>Some text.......
+</h4>
+<br/><br/>
+
+$if src:
+    <center>
+        <img src="$src" alt="centered image"/>
+    </center>
+
+<br/><br/>
+<form method="POST">
+  $:form.render()
+</form>
+</center>
+
+</body></html>
