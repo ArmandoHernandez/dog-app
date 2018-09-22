@@ -1,4 +1,4 @@
-$def with(form, src)
+$def with(form, src, is_dog, is_human)
 
 <!DOCTYPE html PUBLIC "-html>
 <head>
@@ -11,7 +11,14 @@ $def with(form, src)
 <br/><br/><br/><br/>
 <h2>Prediction</h2>
 <br/>
-<h4>Some text.......
+<h4>
+  $if is_dog == True:
+    Hello, little dog! :)
+  $if is_human == True:
+    Hello human! :)
+  $if (is_human == False) and (is_dog == False):
+    No interesting creature detected....
+
 </h4>
 <br/><br/>
 
@@ -19,6 +26,11 @@ $if src:
     <center>
         <img src="$src" alt="centered image"/>
     </center>
+
+$if is_dog:
+  <center>
+        $is_dog
+  </center>
 
 <br/><br/>
 <form method="POST">
