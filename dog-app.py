@@ -8,7 +8,7 @@ from web import form
 from PIL import Image
 
 from keras.models import Sequential
-from keras.layers import Conv2D, MaxPooling2D, Dropout, Dense, Flatten, Activation,GlobalAveragePooling2D
+from keras.layers import Conv2D, MaxPooling2D, Dropout, Dense, Flatten, Activation, GlobalAveragePooling2D
 from keras.preprocessing import image
 from keras.preprocessing.image import ImageDataGenerator, img_to_array, load_img
 from keras.applications.resnet50 import ResNet50, preprocess_input
@@ -36,6 +36,11 @@ class Utilities:
         # convert 3D tensor to 4D tensor with shape (1, 224, 224, 3) and return 4D tensor
         return np.expand_dims(x, axis=0)
 
+    @staticmethod
+    def getBottlenecks(tensor):
+        from keras.applications.xception import Xception, preprocess_input
+        return Xception(weights='imagenet', include_top=False).predict(preprocess_input(tensor))
+
 
 class Models:
     def __init__(self):
@@ -59,6 +64,12 @@ class Models:
              metrics=['accuracy'])
         self.human_detector.load_weights("static/saved_models/human_detector_weights.h5")
 
+        self.Xception_model = Sequential()
+        self.Xception_model.add(GlobalAveragePooling2D(input_shape=(7,7,2048)))
+        self.Xception_model.add(Dense(133, activation='softmax'))
+        self.Xception_model.compile(loss='categorical_crossentropy', optimizer='adamax', metrics=['accuracy'])
+        self.Xception_model.load_weights('static/saved_models/weights.best.Xception.hdf5')
+
         self.graph = tf.get_default_graph()
 
     def res_net_predict(self,img):
@@ -71,13 +82,16 @@ class Models:
             prediction = (self.human_detector.predict(Utilities.path_to_tensor(img_path)) > 0.60)
         return prediction
 
-
-#class FooProxy(NamespaceProxy):
-#    _exposed_ = ('__getattribute__', '__setattr__', '__delattr__', 'get_ResNet_model')
+    def breed_detector_predict(self,img_path):
+        with self.graph.as_default():
+            predicted_vector = self.Xception_model.predict(Utilities.getBottlenecks(Utilities.path_to_tensor(img_path)))
+        breeds_list = open("static/breeds_list/dog_breed_list.txt").readlines()
+        str = breeds_list[np.argmax(predicted_vector)]
+        return str[str.rfind(".") + 1:]
 
 
 class MyManager(BaseManager): pass
-MyManager.register('resnet', Models, exposed=('res_net_predict','human_detector_predict',)) #, FooProxy) #exposed=('get_ResNet_model')
+MyManager.register('resnet', Models, exposed=('res_net_predict','human_detector_predict', 'breed_detector_predict',))
 
 
 class DogApp:
@@ -101,7 +115,7 @@ class DogApp:
             infile = filedir +'/'+filename
             outfile = filedir +'/'+filename
             im = Image.open(filedir +'/'+filename)
-            im.thumbnail((500, 500))
+            im.thumbnail((400, 400))
             im.save(outfile, im.format)
 
         #return render.upload(outfile)
@@ -115,17 +129,16 @@ class Prediction:
         manager.start()
         resnet_manager = manager.resnet()
 
-        #(graph, resnet50_model) = resnet_manager.get_ResNet_model()
         filedir = "./static"
         filename="theImage"
         outfile = filedir+'/'+filename
         is_dog = False
         is_human = False
+        breed = None
         perform_prediction = True
 
         img = preprocess_input(Utilities.path_to_tensor(outfile))
-        #with graph.as_default():
-        #prediction_vector =
+
         class_predicted = np.argmax(resnet_manager.res_net_predict(img))
         is_dog = ((class_predicted <= 268) & (class_predicted >= 151))
 
@@ -134,13 +147,12 @@ class Prediction:
             if is_human == False:
                 perform_prediction = False
 
-        # continue here if perform_prediction == True:
-
-
+        if perform_prediction == True:
+            breed = resnet_manager.breed_detector_predict(outfile)
 
         f = register_form()
 
-        return render.prediction(f,outfile, is_dog, is_human)
+        return render.prediction(f,outfile, is_dog, is_human, breed)
 
 
     def POST(self):

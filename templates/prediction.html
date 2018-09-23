@@ -1,4 +1,4 @@
-$def with(form, src, is_dog, is_human)
+$def with(form, src, is_dog, is_human, breed)
 
 <!DOCTYPE html PUBLIC "-html>
 <head>
@@ -8,18 +8,17 @@ $def with(form, src, is_dog, is_human)
     </center>
 </head><body>
 <center>
-<br/><br/><br/><br/>
-<h2>Prediction</h2>
-<br/>
-<h4>
+<br/><br/><br/>
+<h2>
   $if is_dog == True:
     Hello, little dog! :)
   $if is_human == True:
     Hello human! :)
   $if (is_human == False) and (is_dog == False):
-    No interesting creature detected....
+    You seem to be quite a unique creator....
+    Maybe try again!
 
-</h4>
+</h2>
 <br/><br/>
 
 $if src:
@@ -27,10 +26,13 @@ $if src:
         <img src="$src" alt="centered image"/>
     </center>
 
+<center>
+<br/><br/>
 $if is_dog:
-  <center>
-        $is_dog
-  </center>
+  You seem to be a:<br/>&emsp;<b>$breed</b>
+$elif is_human:
+  If you were a dog, you'd be a:<br/>&emsp;<b>$breed</b>
+</center>
 
 <br/><br/>
 <form method="POST">
